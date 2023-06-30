@@ -1,7 +1,60 @@
 import { Streamer } from '../models/streamer.js';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { generateFileName } from '../helpers/generateFileName.js';
+
+const bucketName = process.env.BUCKET_NAME;
+const region = process.env.BUCKET_REGION;
+const accessKeyId = process.env.ACCESS_KEY;
+const secretAccessKey = process.env.SECRET_ACCESS_KEY;
+
+const s3Client = new S3Client({
+  region,
+  credentials: {
+    accessKeyId,
+    secretAccessKey,
+  },
+});
 
 export const getStreamers = async (req, res) => {
   try {
+    const { currentPage, pageLimit } = req.query;
+
+    if (currentPage && pageLimit) {
+      const skipCount = parseInt(currentPage, 10) - 1;
+      const limitCount = parseInt(pageLimit, 10);
+
+      if (
+        isNaN(skipCount) ||
+        isNaN(limitCount) ||
+        skipCount < 0 ||
+        limitCount <= 0
+      ) {
+        return res.status(400).json({ error: 'Invalid pagination parameters' });
+      }
+
+      const totalStreamers = await Streamer.countDocuments();
+      const totalPages = Math.ceil(totalStreamers / limitCount);
+
+      const streamers = await Streamer.find()
+        .skip(skipCount * limitCount)
+        .limit(limitCount);
+
+      const previousPage =
+        currentPage > 1 ? parseInt(currentPage, 10) - 1 : null;
+      const nextPage =
+        currentPage < totalPages ? parseInt(currentPage, 10) + 1 : null;
+
+      const paginationResult = {
+        currentPage: parseInt(currentPage, 10),
+        previousPage,
+        nextPage,
+        totalPages,
+        streamers,
+      };
+
+      return res.status(200).json(paginationResult);
+    }
+
     const streamers = await Streamer.find();
 
     res.status(200).json(streamers);
@@ -34,10 +87,27 @@ export const createStreamer = async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
+    const imageName = generateFileName();
+
+    const uploadParams = {
+      Bucket: bucketName,
+      Key: imageName,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    };
+
+    console.log(uploadParams);
+
+    const uploadCommand = new PutObjectCommand(uploadParams);
+    await s3Client.send(uploadCommand);
+
+    const imageURL = `https://${bucketName}.s3.${region}.amazonaws.com/${imageName}`;
+
     const newStreamer = new Streamer({
       name,
       platform,
       description,
+      image: imageURL,
     });
 
     const savedStreamer = await newStreamer.save();

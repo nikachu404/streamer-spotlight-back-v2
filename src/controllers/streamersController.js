@@ -15,9 +15,22 @@ const s3Client = new S3Client({
   },
 });
 
+const sortQuery = (query, sortBy, sortOrder) => {
+  switch (sortBy) {
+    case 'createdAt':
+      return query.sort({ createdAt: sortOrder === 'asc' ? 1 : -1 });
+    case 'upvotes':
+      return query.sort({ upvotes: sortOrder === 'asc' ? 1 : -1 });
+    case 'downvotes':
+      return query.sort({ downvotes: sortOrder === 'asc' ? 1 : -1 });
+    default:
+      return query;
+  }
+};
+
 export const getStreamers = async (req, res) => {
   try {
-    const { currentPage, pageLimit } = req.query;
+    const { currentPage, pageLimit, sortBy, sortOrder } = req.query;
 
     if (currentPage && pageLimit) {
       const skipCount = parseInt(currentPage, 10) - 1;
@@ -35,7 +48,10 @@ export const getStreamers = async (req, res) => {
       const totalStreamers = await Streamer.countDocuments();
       const totalPages = Math.ceil(totalStreamers / limitCount);
 
-      const streamers = await Streamer.find()
+      let query = Streamer.find();
+      query = sortQuery(query, sortBy, sortOrder);
+
+      const streamers = await query
         .skip(skipCount * limitCount)
         .limit(limitCount);
 
@@ -55,7 +71,10 @@ export const getStreamers = async (req, res) => {
       return res.status(200).json(paginationResult);
     }
 
-    const streamers = await Streamer.find();
+    let query = Streamer.find();
+    query = sortQuery(query, sortBy, sortOrder);
+
+    const streamers = await query;
 
     res.status(200).json(streamers);
   } catch (error) {

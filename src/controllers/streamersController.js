@@ -82,8 +82,9 @@ export const getStreamer = async (req, res) => {
 export const createStreamer = async (req, res) => {
   try {
     const { name, platform, description } = req.body;
+    const { buffer, mimetype } = req.file;
 
-    if (!name || !platform || !description) {
+    if (!name || !platform || !description || !buffer || !mimetype) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
@@ -92,11 +93,9 @@ export const createStreamer = async (req, res) => {
     const uploadParams = {
       Bucket: bucketName,
       Key: imageName,
-      Body: req.file.buffer,
-      ContentType: req.file.mimetype,
+      Body: buffer,
+      ContentType: mimetype,
     };
-
-    console.log(uploadParams);
 
     const uploadCommand = new PutObjectCommand(uploadParams);
     await s3Client.send(uploadCommand);

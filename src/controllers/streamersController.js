@@ -1,6 +1,6 @@
 import { Streamer } from '../models/streamer.js';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { generateFileName } from '../helpers/generateFileName.js';
+import { generateFileName, sortQuery } from '../helpers/index.js';
 
 const bucketName = process.env.BUCKET_NAME;
 const region = process.env.BUCKET_REGION;
@@ -14,19 +14,6 @@ const s3Client = new S3Client({
     secretAccessKey,
   },
 });
-
-const sortQuery = (query, sortBy, sortOrder) => {
-  switch (sortBy) {
-    case 'createdAt':
-      return query.sort({ createdAt: sortOrder === 'asc' ? 1 : -1 });
-    case 'upvotes':
-      return query.sort({ upvotes: sortOrder === 'asc' ? 1 : -1 });
-    case 'downvotes':
-      return query.sort({ downvotes: sortOrder === 'asc' ? 1 : -1 });
-    default:
-      return query;
-  }
-};
 
 export const getStreamers = async (req, res) => {
   try {

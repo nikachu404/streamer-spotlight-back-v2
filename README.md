@@ -1,6 +1,8 @@
 <h1 align="center">API Usage Guide</h1>
 This guide provides instructions on how to use the API to interact with streamers data.
 
+[Server](https://streamer-spotlight-back-v2-e53ca344e263.herokuapp.com/streamers)
+
 <h2 align="center">Prerequisites</h2>
 Before using the API, ensure that you have the following:
 

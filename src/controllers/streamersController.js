@@ -69,7 +69,7 @@ export const getStreamers = async (req, res) => {
   }
 };
 
-export const getStreamer = async (req, res) => {
+export const getStreamerById = async (req, res) => {
   try {
     const { streamerId } = req.params;
 
@@ -90,7 +90,13 @@ export const createStreamer = async (req, res) => {
     const { name, platform, description } = req.body;
     const { buffer, mimetype } = req.file;
 
-    if (!name || !platform || !description || !buffer || !mimetype) {
+    if (
+      !name.trim() ||
+      !platform ||
+      !description.trim() ||
+      !buffer ||
+      !mimetype
+    ) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
@@ -135,28 +141,33 @@ export const voteStreamer = async (req, res) => {
     }
 
     switch (voteType) {
-      case 'upvote':
+      case 'upvote': {
         streamer.upvotes++;
         break;
+      }
 
-      case 'downvote':
+      case 'downvote': {
         streamer.downvotes++;
         break;
+      }
 
-      case 'unvoteUpvote':
+      case 'unvoteUpvote': {
         if (streamer.upvotes > 0) {
           streamer.upvotes--;
         }
         break;
+      }
 
-      case 'unvoteDownvote':
+      case 'unvoteDownvote': {
         if (streamer.downvotes > 0) {
           streamer.downvotes--;
         }
         break;
+      }
 
-      default:
+      default: {
         return res.status(400).json({ error: 'Invalid vote type' });
+      }
     }
 
     const updatedStreamer = await streamer.save();
